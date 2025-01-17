@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import './Navbar.css';
-import logo from './logo1.jpg'
+import React, { useState } from "react";
+import "./Navbar.css";
+import logo from "./logo3.png";
+import { Link } from "react-router-dom";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -12,7 +13,7 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        <img src={logo} alt="logo" className="navbar-logo" />
+        <img src={logo} alt="https://icons8.com" className="navbar-logo" />
         <div className="navbar-toggle" onClick={toggleMenu}>
           <span className={`bar ${isOpen ? "open" : ""}`}></span>
           <span className={`bar ${isOpen ? "open" : ""}`}></span>
@@ -20,25 +21,25 @@ const Navbar = () => {
         </div>
         <ul className={`navbar-links ${isOpen ? "open" : ""}`}>
           <li>
-            <a href="#home" onClick={toggleMenu}>
+            <Link to="/" onClick={toggleMenu}>
               INICIO
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="#matches" onClick={toggleMenu}>
+            <Link to="/comics" onClick={toggleMenu}>
               COMICS
-            </a>
+            </Link>
           </li>
           <li>
-            <a href="#teams" onClick={toggleMenu}>
+            <Link to="/personajes" onClick={toggleMenu}>
               PERSONAJES
-            </a>
+            </Link>
           </li>
-          
+
           <li>
-            <a href="#contact" onClick={toggleMenu}>
+            <Link to="/contacto" onClick={toggleMenu}>
               CONTACTO
-            </a>
+            </Link>
           </li>
         </ul>
       </div>
@@ -47,3 +48,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+
