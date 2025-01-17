@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import './FetchData.css';
 import Cards from '../cards/Cards';
+import icono from './logoLoading.png';
 
 const FetchData = () => {
     const [data, setData] = useState(null);
@@ -29,18 +31,28 @@ const FetchData = () => {
     }, []);
 
     if (loading) {
-        return <div>Loading...</div>;
-    }
+
+         return (
+           <div className="loading-container">
+             <img src={icono} alt="icono"></img>
+             <p>Loading...</p>
+           </div>
+         );
+        }
 
     if (error) {
         return <div>Error: {error.message}</div>;
     }
 
     return (
-      console.log(data),
-      data.data.results.map((character) => (
-        <Cards key={character.id} character={character} />
-      ))
+      <div className="card-container">
+        {data.data.results.map((character) => (
+          <div key={character.id}>
+            <Cards character={character} />
+            
+          </div>
+        ))}
+      </div>
     );
 };
 
