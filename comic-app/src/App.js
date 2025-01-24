@@ -13,9 +13,10 @@ function App() {
       <BrowserRouter>
         <Navbar />
         <Routes>
-          <Route path="/" element={<FetchData />} />
-          <Route path="/personajes" element={<Personajes/>} />
-          <Route path="/comics/:id" element={<Comics/>} />
+          <Route path="/"  element={<FetchData />} />
+          <Route path="/inicio" element={<FetchData />} />
+          <Route path="/personajes" element={<Personajes />} />
+          <Route path="/comics/:id" element={<Comics />} />
           <Route path="/contacto" element={<Contacto />} />
         </Routes>
         <Footer />

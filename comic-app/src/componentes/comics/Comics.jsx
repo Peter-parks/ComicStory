@@ -4,7 +4,7 @@ import "./Comics.css";
 
 const Comics = () => {
     const [data, setData] = useState();
-    const id = useParams().id;
+    const id = useParams(1).id;
 
     
     useEffect(() => {
@@ -13,7 +13,7 @@ const Comics = () => {
         )
             .then((res) => res.json())
             .then((data) => {
-                console.log(id);
+                
                 setData(data.data.results);
             });
     }, [id]);
