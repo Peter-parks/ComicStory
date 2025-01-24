@@ -1,15 +1,33 @@
+/* Contenedor de las tarjetas */
+.card-container {
+  width: 350px;
+  height: auto;
+  padding: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+}
+
 /* Estilos para la tarjeta */
 .card {
   background-color: #fff;
   border: 2px solid #000;
   border-radius: 10px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  margin: 20px;
   padding: 20px;
-  width: 100%;
-  max-width: 300px;
   font-family: 'Comic Sans MS', cursive, sans-serif;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s;
+  overflow: hidden;
+  width: 300px;  /* Ancho fijo */
+  height: 550px;  /* Alto fijo */
+}
+
+.card:hover {
+  animation: vibrate 0.3s linear infinite;
 }
 
 .card-image {
@@ -30,6 +48,8 @@
 .card-content {
   font-size: 16px;
   color: #333;
+  flex-grow: 1;
+  overflow-y: scroll;
   margin-bottom: 15px;
 }
 
@@ -41,6 +61,7 @@
   border-radius: 5px;
   text-decoration: none;
   transition: background-color 0.3s;
+  margin-top: 10px;
 }
 
 .card-button:hover {
@@ -56,9 +77,14 @@
 }
 
 /* Responsivo */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+  .card-container {
+    display: block;
+  }
+
   .card {
-    max-width: 90%;
+    width: 100%;  /* Ancho del 100% en pantallas pequeñas */
+    height: auto; /* Alto automático en pantallas pequeñas */
   }
 
   .card-title {
@@ -67,9 +93,18 @@
 
   .card-content {
     font-size: 14px;
+    overflow-y: auto; /* Ajuste para pantallas pequeñas */
   }
 
   .card-button {
     font-size: 14px;
   }
+}
+
+@keyframes vibrate {
+  0% { transform: translate(0); }
+  25% { transform: translate(-2px, 2px); }
+  50% { transform: translate(2px, -2px); }
+  75% { transform: translate(-2px, -2px); }
+  100% { transform: translate(2px, 2px); }
 }
