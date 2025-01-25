@@ -45,7 +45,7 @@ const FetchData = () => {
     }
 
     return (
-      <div className="container">
+      <div className="containerData">
         {data.data.results.map((character) => (
           <div key={character.id}>
             <Cards character={character} />
