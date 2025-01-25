@@ -26,7 +26,7 @@ const Navbar = () => {
             </Link>
           </li>
           <li>
-            <Link to="/comics" onClick={toggleMenu}>
+            <Link to="/comics/116" onClick={toggleMenu}>
               COMICS
             </Link>
           </li>

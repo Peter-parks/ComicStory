@@ -27,7 +27,7 @@
 }
 
 .card:hover {
-  animation: vibrate 0.3s linear infinite;
+  animation: vibrate 0.3s linear;
 }
 
 .card-image {
@@ -98,6 +98,18 @@
 
   .card-button {
     font-size: 14px;
+  }
+}
+
+@media  (max-width: 480px){
+  .card-container{
+    max-width: 85%;
+  }
+}
+
+@media (max-width: 400px){
+  .card-container{
+    max-width: 70%;
   }
 }
 

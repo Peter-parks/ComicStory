@@ -154,6 +154,22 @@
   }
 }
 
+@media  (max-width: 480px){
+  .tarjeta-container{
+    max-width: 85%;
+    max-height: 85%s;
+  }
+}
+
+@media (max-width: 400px){
+  .tarjeta-container{
+    max-width: 70%;
+    max-height: 70%s;
+
+  }
+}
+
+
 @keyframes vibrate {
   0% { transform: translate(0); }
   25% { transform: translate(-2px, 2px); }
