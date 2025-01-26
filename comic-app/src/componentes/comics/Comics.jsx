@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import {  useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import "./Comics.css";
 
@@ -6,6 +6,10 @@ const Comics = () => {
   const [data, setData] = useState();
   const id = useParams(0).id;
   const [rating, setRating] = useState(0);
+
+  
+
+
 
   const handleRating = (rate) => {
     setRating(rate);
@@ -22,7 +26,7 @@ const Comics = () => {
   }, [id]);
 
   return (
-    <>
+    <div className="comics-container">
       {data &&
         data.map((character) => (
           <div key={character.id} className="comics-card">
@@ -33,7 +37,9 @@ const Comics = () => {
             />
             <h2 className="comic-title">{character.title}</h2>
             <p className="comic-content">{character.description}</p>
-            <p className="comic-price">Precio: ${character.creators.available}</p>
+            <p className="comic-price">
+              Precio: ${character.creators.available}
+            </p>
             <div className="comic-rating">
               {[...Array(5)].map((star, index) => {
                 index += 1;
@@ -52,7 +58,7 @@ const Comics = () => {
             <button className="add-to-cart-btn">Agregar al Carrito</button>
           </div>
         ))}
-    </>
+    </div>
   );
 };
 
