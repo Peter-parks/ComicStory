@@ -1,0 +1,179 @@
+/* Estilos para el contenedor de carga */
+.loading-personajes {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  background-color: #f0f0f0;
+}
+
+.loading-personajes img {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 20px;
+  transition: transform 0.3s, filter 0.3s;
+}
+
+.loading-personajes img:hover {
+  transform: scale(1.1);
+  filter: brightness(1.2);
+}
+
+.loading-personajes p {
+  font-size: 20px;
+  color: #000;
+  text-shadow: 2px 2px #ff0000;
+  transition: transform 0.3s, color 0.3s;
+}
+
+.loading-personajes p:hover {
+  transform: scale(1.1);
+  color: #ff0000;
+}
+
+/* estilos contenedor tarjeta */
+
+/* Contenedor de las tarjetas */
+
+
+/* Contenedor de cada tarjeta */
+.container-personaje {
+  
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+}
+
+
+.tarjeta-container {
+   width: 350px;
+  height: auto;
+  padding: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+}
+
+/* Estilos para la tarjeta */
+.tarjeta {
+  background-color: #fff;
+  border: 2px solid #000;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s;
+  overflow: hidden;
+  width: 300px;  /* Ancho fijo */
+  height: 550px;  /* Alto fijo */
+}
+
+.tarjeta:hover {
+  animation: vibrate 0.3s linear infinite;
+}
+
+.tarjeta-image {
+  width: 100%;
+  height: auto;
+  border-radius: 5px;
+  border: 2px solid #000;
+  margin-bottom: 15px;
+}
+
+.tarjeta-title {
+  font-size: 20px;
+  color: #000;
+  text-shadow: 2px 2px #ff0000;
+  margin-bottom: 10px;
+}
+
+.tarjeta-content {
+  font-size: 16px;
+  color: #333;
+  flex-grow: 1;
+  overflow-y: scroll;
+  margin-bottom: 15px;
+}
+
+.tarjeta-content::-webkit-scrollbar {
+  width: 5px;
+}
+
+.tarjeta-content::-webkit-scrollbar-thumb {
+  background-color: #000;
+}
+
+.tarjeta-button {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #000;
+  color: #fff;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.tarjeta-button:hover {
+  background-color: #ff0000;
+}
+
+.marvel-enlace {
+  display: block;
+  margin-top: 10px;
+  font-size: 12px;
+  color: #000;
+  text-decoration: none;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  
+  .tarjeta-container {
+    width: 100%;
+    height: auto;  /* Alto automático en pantallas pequeñas */
+  }
+
+  .tarjeta-title {
+    font-size: 18px;
+  }
+
+  .tarjeta-content {
+    font-size: 14px;
+    overflow-y: auto; /* Ajuste para pantallas pequeñas */
+  }
+
+  .tarjeta-button {
+    font-size: 14px;
+  }
+}
+
+@media  (max-width: 480px){
+  .tarjeta-container{
+    max-width: 85%;
+    max-height: 85%s;
+  }
+}
+
+@media (max-width: 400px){
+  .tarjeta-container{
+    max-width: 70%;
+    max-height: 70%s;
+
+  }
+}
+
+
+@keyframes vibrate {
+  0% { transform: translate(0); }
+  25% { transform: translate(-2px, 2px); }
+  50% { transform: translate(2px, -2px); }
+  75% { transform: translate(-2px, -2px); }
+  100% { transform: translate(2px, 2px); }
+}

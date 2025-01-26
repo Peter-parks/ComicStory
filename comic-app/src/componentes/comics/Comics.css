@@ -1,0 +1,87 @@
+/* .comics-card{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 15px;
+}
+
+.comic-content{
+    text-align: center;
+}
+
+.comic-image {
+    width: 750px;
+    height: auto;
+} */
+
+.comics-container{
+  
+}
+
+
+
+.comics-card {
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px;
+  text-align: center;
+  background-color: #fff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.comic-image {
+  width: 50%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 3px 3px 25px darkslateblue;
+}
+
+.comic-title {
+  font-size: 1.5em;
+  margin: 16px 0;
+}
+
+.comic-content {
+  font-size: 1em;
+  color: #555;
+}
+
+.comic-price {
+  font-size: 1.2em;
+  color: #000;
+  margin: 16px 0;
+}
+
+.comic-rating {
+  display: flex;
+  justify-content: center;
+  margin: 16px 0;
+}
+
+.comic-rating button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.comic-rating .on .star {
+  color: #ffeb3b;
+}
+
+.comic-rating .off .star {
+  color: #ccc;
+}
+
+.add-to-cart-btn {
+  background-color: #007bff;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.add-to-cart-btn:hover {
+  background-color: #0056b3;
+}

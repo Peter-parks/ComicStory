@@ -1,0 +1,74 @@
+/* Estilos para el contenedor principal */
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f0f0;
+  padding: 20px;
+}
+
+/* Estilos para el contenedor del formulario */
+.container-form {
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 400px;
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  border: 2px solid #000;
+}
+
+/* Estilos para el título */
+h2 {
+  text-align: center;
+  color: #000;
+  text-shadow: 2px 2px #ff0000;
+}
+
+/* Estilos para el formulario */
+.form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Estilos para los campos de entrada */
+.textarea {
+  margin-bottom: 15px;
+  padding: 10px;
+  border: 2px solid #000;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+/* Estilos para el botón */
+button {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #000;
+  color: #fff;
+  cursor: pointer;
+  font-size: 16px;
+  text-transform: uppercase;
+}
+
+button:hover {
+  background-color: #ff0000;
+}
+
+/* Responsivo */
+@media (max-width: 600px) {
+  .container-form {
+    width: 90%;
+  }
+
+  .textarea {
+    font-size: 14px;
+  }
+
+  button {
+    font-size: 14px;
+  }
+}

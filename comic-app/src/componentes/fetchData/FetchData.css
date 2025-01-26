@@ -1,0 +1,59 @@
+/* Estilos para el contenedor de carga */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-family: 'Comic Sans MS', cursive, sans-serif;
+  background-color: #f0f0f0;
+}
+
+.loading-container img {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 20px;
+  transition: transform 0.3s, filter 0.3s;
+}
+
+.loading-container img:hover {
+  transform: scale(1.1);
+  filter: brightness(1.2);
+}
+
+.loading-container p {
+  font-size: 20px;
+  color: #000;
+  text-shadow: 2px 2px #ff0000;
+  transition: transform 0.3s, color 0.3s;
+}
+
+.loading-container p:hover {
+  transform: scale(1.1);
+  color: #ff0000;
+}
+
+
+/* Responsivo */
+@media (max-width: 600px) {
+  .loading-container img {
+    width: 80px;
+    height: 80px;
+  }
+
+  .loading-container p {
+    font-size: 16px;
+  }
+
+  .container > div {
+    max-width: 90%;
+  }
+}
+
+/* Estilos para el contenedor principal */
+.containerData {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+
+}
