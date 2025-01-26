@@ -8,8 +8,10 @@
   position: relative;
   width: 100%;
   box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.1);
-  margin-top: 20px; /* Espacio entre el contenido y el pie de página */
+  margin-top: 10px; /* Espacio entre el contenido y el pie de página */
+  
 }
+
 
 /* Estilos para las redes sociales */
 .social-media {
@@ -54,16 +56,8 @@
     font-size: 14px;
   }
 
-  .footer {
-    padding: 20px 10px;
-  }
+
 }
 
 
-@media (max-width:480px){
- .footer{ 
-  
-  max-width: 94%;
-}
-}
 

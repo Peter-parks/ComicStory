@@ -7,6 +7,8 @@ const Personajes = () => {
   const [data, setData] = useState();
   const [loading, setLoading] = useState(true);
 
+
+
   useEffect(() => {
     fetch(
       `https://gateway.marvel.com:443/v1/public/characters?ts=1&apikey=54dc3c7028c0096eabedf8ddd6fa9acc&hash=9ccf8d8d3235af7383bb24fb03d9b984`
