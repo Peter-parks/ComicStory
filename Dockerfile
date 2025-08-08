@@ -1,26 +1,29 @@
-# Usar imagen base de Node.js
-FROM node:18-alpine
+# Etapa 1: Construir la aplicación React
+FROM node:18-alpine AS build
 
 # Establecer directorio de trabajo
 WORKDIR /app
 
 # Copiar package.json y package-lock.json desde comic-app
-COPY comic-app/package*.json ./
+COPY ./comic-app/package*.json ./
 
 # Instalar dependencias
-RUN npm ci --production
+RUN npm ci
 
 # Copiar todo el código fuente de la aplicación React
-COPY comic-app/ ./
+COPY ./comic-app ./
 
 # Construir la aplicación para producción
 RUN npm run build
 
-# Usar nginx para servir la aplicación
+# Etapa 2: Servir con nginx
 FROM nginx:alpine
-COPY --from=0 /app/build /usr/share/nginx/html
+
+# Copiar los archivos construidos al directorio de nginx
+COPY --from=build /app/build /usr/share/nginx/html
 
 # Exponer puerto 80
 EXPOSE 80
 
 # Nginx se ejecuta automáticamente
+CMD ["nginx", "-g", "daemon off;"]
