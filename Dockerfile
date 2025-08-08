@@ -4,14 +4,14 @@ FROM node:18-alpine AS build
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar package.json y package-lock.json desde comic-app
-COPY ./comic-app/package*.json ./
+# Copiar package.json y package-lock.json desde app
+COPY app/package*.json ./
 
 # Instalar dependencias
 RUN npm ci
 
 # Copiar todo el código fuente de la aplicación React
-COPY ./comic-app ./
+COPY app/ ./
 
 # Construir la aplicación para producción
 RUN npm run build
