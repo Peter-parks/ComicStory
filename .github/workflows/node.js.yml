@@ -31,7 +31,7 @@ jobs:
       uses: docker/build-push-action@v6
       with:
         context: .
-        file: ./comic-app/Dockerfile
+        file: ./Dockerfile
         push: true
-        tags: ${{ secrets.DOCKER_USERNAME }}/app:latest
+        tags: ${{ secrets.DOCKER_USERNAME }}/comic-story:latest
         platforms: linux/amd64,linux/arm64
