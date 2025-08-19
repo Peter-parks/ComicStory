@@ -6,8 +6,6 @@
   "homepage": "https://peter-parks.github.io/inicio",
   "license": "ISC",
   "author": "",
-  "type": "commonjs",
-  "main": "index.js",
   "scripts": {
     "start": "react-scripts start",
     "predeploy": "npm run build",

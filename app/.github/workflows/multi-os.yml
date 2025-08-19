@@ -1,0 +1,17 @@
+name: Multi-OS Test
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    
+    steps:
+    - uses: actions/checkout@v4
+    - name: Show OS info
+      run: |
+        echo "Sistema operativo: ${{ matrix.os }}"
+        echo "Arquitectura: ${{ runner.arch }}"
