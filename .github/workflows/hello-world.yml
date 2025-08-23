@@ -12,8 +12,11 @@ jobs:
       
     - name: Say hello
       run: |
-        echo "¡Hola desde GitHub Actions!"
+        echo "desde aca manejo el mensaje !! "
         echo "Ejecutándose en: ${{ runner.os }}"
         echo "Repositorio: ${{ github.repository }}"
         echo "Evento: ${{ github.event_name }}"
-        
+        echo "Ref: ${{ github.ref }}"
+        echo "Actor: ${{ github.actor }}"
+        echo "Mensaje personalizado: ¡Hola desde el flujo de trabajo!"
+        echo "Mensaje adicional: ¡Este es un mensaje extra!"
