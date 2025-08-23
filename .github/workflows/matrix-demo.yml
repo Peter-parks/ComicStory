@@ -42,7 +42,7 @@ jobs:
     
     strategy:
       fail-fast: false  # No parar si uno falla
-      max-parallel: 1   # Solo 2 jobs en paralelo
+      max-parallel: 3   # Solo 2 jobs en paralelo
       matrix:
         browser: [chrome, firefox, edge]
         test-suite: [smoke, regression]
