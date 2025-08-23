@@ -34,7 +34,7 @@ jobs:
       run: |
         echo "🎯 Manual inputs:"
         echo "Environment: ${{ inputs.environment }}"
-        echo "Debug mode: true
+        echo "Debug mode: ${{ inputs.debug_mode }}"
         echo ""
         echo "📋 GitHub context:"
         echo "Actor: ${{ github.actor }}"
