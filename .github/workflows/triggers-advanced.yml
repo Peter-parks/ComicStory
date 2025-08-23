@@ -1,0 +1,56 @@
+name: Advanced Triggers Demo
+
+on:
+  # Trigger en push solo a archivos específicos
+  push:
+    paths:
+      - 'src/**'
+      - '*.md'
+    branches: [main]
+  
+  # Trigger manual con inputs
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options: ['staging', 'production', 'development']
+      debug_mode:
+        description: 'Enable debug mode'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  context-demo:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Show all contexts
+      run: |
+        echo "🎯 Manual inputs:"
+        echo "Environment: ${{ inputs.environment }}"
+        echo "Debug mode: ${{ inputs.debug_mode }}"
+        echo ""
+        echo "📋 GitHub context:"
+        echo "Actor: ${{ github.actor }}"
+        echo "Repository: ${{ github.repository }}"
+        echo "Ref: ${{ github.ref }}"
+        echo "SHA: ${{ github.sha }}"
+        echo "Event: ${{ github.event_name }}"
+        echo ""
+        echo "🖥️ Runner context:"
+        echo "OS: ${{ runner.os }}"
+        echo "Arch: ${{ runner.arch }}"
+        echo "Temp: ${{ runner.temp }}"
+        
+    - name: Conditional step
+      if: ${{ inputs.debug_mode == true }}
+      run: |
+        echo "🐛 Debug mode is ON!"
+        echo "Full GitHub context:"
+        echo '${{ toJSON(github) }}'
