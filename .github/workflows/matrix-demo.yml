@@ -1,0 +1,112 @@
+name: Matrix Strategy Demo
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Type of test to run'
+        type: choice
+        default: 'unit'
+        options: ['unit', 'integration', 'e2e']
+
+jobs:
+  # Job 1: Matrix básica
+  basic-matrix:
+    runs-on: ${{ matrix.os }}
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: [16, 18, 20]
+        # Esto creará 9 jobs (3 OS × 3 versiones)
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+    
+    - name: Display matrix info
+      run: |
+        echo "🖥️ OS: ${{ matrix.os }}"
+        echo "🟢 Node: ${{ matrix.node-version }}"
+        echo "🏃 Runner: ${{ runner.os }}"
+        node --version
+        npm --version
+
+  # Job 2: Matrix con include/exclude
+  advanced-matrix:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false  # No parar si uno falla
+      max-parallel: 2   # Solo 2 jobs en paralelo
+      matrix:
+        browser: [chrome, firefox, edge]
+        test-suite: [smoke, regression]
+        
+        # Incluir configuraciones específicas
+        include:
+          - browser: safari
+            test-suite: smoke
+            os: macos-latest
+        
+        # Excluir combinaciones
+        exclude:
+          - browser: edge
+            test-suite: regression
+    
+    steps:
+    - name: Test with ${{ matrix.browser }}
+      run: |
+        echo "🌐 Browser: ${{ matrix.browser }}"
+        echo "🧪 Test suite: ${{ matrix.test-suite }}"
+        echo "📱 Input test type: ${{ inputs.test_type }}"
+        
+        # Simular diferentes tiempos de ejecución
+        if [ "${{ matrix.browser }}" = "chrome" ]; then
+          sleep 5
+        elif [ "${{ matrix.browser }}" = "firefox" ]; then
+          sleep 3
+        else
+          sleep 1
+        fi
+        
+        echo "✅ Tests completed!"
+
+  # Job 3: Matrix dinámica con outputs
+  dynamic-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    
+    steps:
+    - name: Set dynamic matrix
+      id: set-matrix
+      run: |
+        # Crear matrix dinámicamente basada en input
+        if [ "${{ inputs.test_type }}" = "unit" ]; then
+          echo "matrix=[\"fast\", \"complete\"]" >> $GITHUB_OUTPUT
+        elif [ "${{ inputs.test_type }}" = "integration" ]; then
+          echo "matrix=[\"api\", \"database\", \"cache\"]" >> $GITHUB_OUTPUT
+        else
+          echo "matrix=[\"chrome\", \"firefox\", \"edge\"]" >> $GITHUB_OUTPUT
+        fi
+
+  # Job 4: Usar matrix dinámica
+  use-dynamic-matrix:
+    needs: dynamic-matrix
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        test: ${{ fromJSON(needs.dynamic-matrix.outputs.matrix) }}
+    
+    steps:
+    - name: Run dynamic test
+      run: |
+        echo "🎯 Running ${{ matrix.test }} tests"
+        echo "📋 Test type: ${{ inputs.test_type }}"
+        echo "⚡ This matrix was generated dynamically!"
