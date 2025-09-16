@@ -6,7 +6,6 @@ import FetchData from "./componentes/fetchData/FetchData";
 import Footer from "./componentes/footer/Footer";
 import Navbar from "./componentes/navBar/Navbar";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { useState } from "react";
 import { CartContext } from "./componentes/context/CartContext";
 
 function App() {
