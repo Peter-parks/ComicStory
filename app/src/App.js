@@ -10,8 +10,6 @@ import { useState } from "react";
 import { CartContext } from "./componentes/context/CartContext";
 
 function App() {
-  const [compras, setCompras] = useState([]);
-
   const user = "camps";
   const edad = 35;
 
