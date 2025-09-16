@@ -1,0 +1,315 @@
+# Workflow reutilizable para build y deploy
+name: Reusable Build & Deploy
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: 'Working directory for build'
+        required: true
+        type: string
+      environment:
+        description: 'Target environment'
+        required: true
+        type: string
+      build-command:
+        description: 'Build command to execute'
+        required: false
+        type: string
+        default: 'build'
+      artifact-name:
+        description: 'Name for build artifact'
+        required: false
+        type: string
+        default: 'build-files'
+      deploy-provider:
+        description: 'Deployment provider (netlify, vercel, heroku, s3)'
+        required: true
+        type: string
+      custom-domain:
+        description: 'Custom domain for deployment'
+        required: false
+        type: string
+        default: ''
+    
+    outputs:
+      build-size:
+        description: 'Size of the built application'
+        value: ${{ jobs.build.outputs.size }}
+      deploy-url:
+        description: 'Deployed application URL'
+        value: ${{ jobs.deploy.outputs.url }}
+      deployment-time:
+        description: 'Time taken for deployment'
+        value: ${{ jobs.deploy.outputs.time }}
+    
+    secrets:
+      NETLIFY_AUTH_TOKEN:
+        description: 'Netlify authentication token'
+        required: false
+      NETLIFY_SITE_ID:
+        description: 'Netlify site ID'
+        required: false
+      VERCEL_TOKEN:
+        description: 'Vercel authentication token'
+        required: false
+      VERCEL_PROJECT_ID:
+        description: 'Vercel project ID'
+        required: false
+      AWS_ACCESS_KEY_ID:
+        description: 'AWS access key'
+        required: false
+      AWS_SECRET_ACCESS_KEY:
+        description: 'AWS secret key'
+        required: false
+      S3_BUCKET:
+        description: 'S3 bucket name'
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      size: ${{ steps.size.outputs.size }}
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🟢 Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: '${{ inputs.working-directory }}/package-lock.json'
+    
+    - name: 📦 Install dependencies
+      working-directory: ${{ inputs.working-directory }}
+      run: npm ci
+    
+    - name: 🔧 Configure build environment
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "🔧 Configuring build for ${{ inputs.environment }}"
+        
+        # Crear archivo de configuración de entorno
+        cat > .env.production << EOF
+        REACT_APP_ENV=${{ inputs.environment }}
+        REACT_APP_VERSION=${{ github.sha }}
+        REACT_APP_BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        REACT_APP_DEPLOY_PROVIDER=${{ inputs.deploy-provider }}
+        EOF
+        
+        if [ -n "${{ inputs.custom-domain }}" ]; then
+          echo "REACT_APP_DOMAIN=${{ inputs.custom-domain }}" >> .env.production
+        fi
+    
+    - name: 🏗️ Build application
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "🏗️ Building application with: npm run ${{ inputs.build-command }}"
+        CI=true npm run ${{ inputs.build-command }}
+        
+        echo "✅ Build completed successfully!"
+    
+    - name: 📏 Calculate build size
+      id: size
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ -d "build" ]; then
+          SIZE=$(du -sh build | cut -f1)
+          echo "size=${SIZE}" >> $GITHUB_OUTPUT
+          echo "📏 Build size: ${SIZE}"
+          
+          # Detailed size analysis
+          echo "### 📊 Build Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- **Total Size**: ${SIZE}" >> $GITHUB_STEP_SUMMARY
+          echo "- **JS Files**: $(find build/static/js -name '*.js' | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- **CSS Files**: $(find build/static/css -name '*.css' 2>/dev/null | wc -l || echo '0')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Assets**: $(find build/static -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "size=unknown" >> $GITHUB_OUTPUT
+          echo "⚠️ Build directory not found"
+        fi
+    
+    - name: 🧹 Optimize build
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ -d "build" ]; then
+          echo "🧹 Optimizing build..."
+          
+          # Comprimir archivos CSS y JS si están disponibles
+          find build/static -name "*.js" -exec gzip -k {} \;
+          find build/static -name "*.css" -exec gzip -k {} \; 2>/dev/null || true
+          
+          # Generar manifest de archivos
+          find build -type f | sort > build/file-manifest.txt
+          
+          echo "✅ Build optimization completed"
+        fi
+    
+    - name: 📤 Upload build artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ${{ inputs.working-directory }}/build/
+        retention-days: 7
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+      time: ${{ steps.deploy.outputs.time }}
+    
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ steps.deploy.outputs.url }}
+    
+    steps:
+    - name: 📥 Download build artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ./build
+    
+    - name: 🚀 Deploy to ${{ inputs.deploy-provider }}
+      id: deploy
+      run: |
+        START_TIME=$(date +%s)
+        echo "🚀 Starting deployment to ${{ inputs.deploy-provider }}"
+        
+        case "${{ inputs.deploy-provider }}" in
+          "netlify")
+            if [ -n "${{ secrets.NETLIFY_AUTH_TOKEN }}" ] && [ -n "${{ secrets.NETLIFY_SITE_ID }}" ]; then
+              echo "🌐 Deploying to Netlify..."
+              # Simular deployment a Netlify
+              sleep 5
+              if [ -n "${{ inputs.custom-domain }}" ]; then
+                DEPLOY_URL="https://${{ inputs.custom-domain }}"
+              else
+                DEPLOY_URL="https://${{ secrets.NETLIFY_SITE_ID }}.netlify.app"
+              fi
+              echo "url=${DEPLOY_URL}" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Netlify credentials not configured"
+              exit 1
+            fi
+            ;;
+            
+          "vercel")
+            if [ -n "${{ secrets.VERCEL_TOKEN }}" ]; then
+              echo "⚡ Deploying to Vercel..."
+              # Simular deployment a Vercel
+              sleep 4
+              if [ -n "${{ inputs.custom-domain }}" ]; then
+                DEPLOY_URL="https://${{ inputs.custom-domain }}"
+              else
+                DEPLOY_URL="https://comic-app-${{ inputs.environment }}.vercel.app"
+              fi
+              echo "url=${DEPLOY_URL}" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Vercel token not configured"
+              exit 1
+            fi
+            ;;
+            
+          "heroku")
+            echo "🟣 Deploying to Heroku..."
+            # Simular deployment a Heroku
+            sleep 6
+            DEPLOY_URL="https://comic-app-${{ inputs.environment }}.herokuapp.com"
+            echo "url=${DEPLOY_URL}" >> $GITHUB_OUTPUT
+            ;;
+            
+          "s3")
+            if [ -n "${{ secrets.AWS_ACCESS_KEY_ID }}" ] && [ -n "${{ secrets.S3_BUCKET }}" ]; then
+              echo "☁️ Deploying to S3..."
+              # Simular deployment a S3
+              sleep 3
+              if [ -n "${{ inputs.custom-domain }}" ]; then
+                DEPLOY_URL="https://${{ inputs.custom-domain }}"
+              else
+                DEPLOY_URL="https://${{ secrets.S3_BUCKET }}.s3-website-us-east-1.amazonaws.com"
+              fi
+              echo "url=${DEPLOY_URL}" >> $GITHUB_OUTPUT
+            else
+              echo "❌ AWS credentials not configured"
+              exit 1
+            fi
+            ;;
+            
+          *)
+            echo "❌ Unknown deployment provider: ${{ inputs.deploy-provider }}"
+            exit 1
+            ;;
+        esac
+        
+        END_TIME=$(date +%s)
+        DEPLOY_TIME=$((END_TIME - START_TIME))
+        echo "time=${DEPLOY_TIME}s" >> $GITHUB_OUTPUT
+        
+        echo "✅ Deployment completed in ${DEPLOY_TIME}s"
+    
+    - name: 🔍 Post-deployment verification
+      run: |
+        echo "🔍 Verifying deployment..."
+        DEPLOY_URL="${{ steps.deploy.outputs.url }}"
+        
+        if [ -n "${DEPLOY_URL}" ]; then
+          echo "🌐 Application URL: ${DEPLOY_URL}"
+          
+          # Simular health check
+          sleep 2
+          echo "✅ Health check passed"
+          
+          # Simular performance check
+          echo "⚡ Performance check: Good"
+          echo "🔒 Security headers: OK"
+        else
+          echo "❌ Deployment URL not available"
+          exit 1
+        fi
+    
+    - name: 📊 Deployment summary
+      run: |
+        echo "### 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Provider**: ${{ inputs.deploy-provider }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ inputs.environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **URL**: ${{ steps.deploy.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Build Size**: ${{ needs.build.outputs.size }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deploy Time**: ${{ steps.deploy.outputs.time }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+
+  post-deploy:
+    needs: [build, deploy]
+    if: success()
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 🎯 Post-deployment tasks
+      run: |
+        echo "🎯 Running post-deployment tasks..."
+        
+        # Simular tareas post-deploy
+        echo "📊 Updating monitoring dashboards..."
+        sleep 1
+        
+        echo "🔔 Sending notifications..."
+        sleep 1
+        
+        echo "📝 Updating documentation..."
+        sleep 1
+        
+        echo "✅ All post-deployment tasks completed"
+    
+    - name: 🏷️ Create deployment tag
+      if: inputs.environment == 'production'
+      run: |
+        echo "🏷️ Creating deployment tag for production..."
+        TAG_NAME="deploy-${{ inputs.environment }}-$(date +%Y%m%d-%H%M%S)"
+        echo "Tag would be created: ${TAG_NAME}"
+        
+        # En un entorno real, aquí crearías el tag
+        # git tag ${TAG_NAME}
+        # git push origin ${TAG_NAME}

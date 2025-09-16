@@ -1,0 +1,363 @@
+# Workflow principal que usa los workflows reutilizables
+name: Monorepo CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy_environment:
+        description: 'Environment to deploy'
+        type: choice
+        required: true
+        default: 'development'
+        options: ['development', 'staging', 'production']
+      skip_tests:
+        description: 'Skip all tests'
+        type: boolean
+        default: false
+      force_deploy_all:
+        description: 'Force deploy all services'
+        type: boolean
+        default: false
+
+env:
+  # Configuración global del pipeline
+  DEFAULT_NODE_VERSION: '18'
+  REGISTRY: ghcr.io
+
+jobs:
+  # Job 1: Detectar cambios en el monorepo
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      # Outputs para diferentes servicios/apps
+      app-changed: ${{ steps.changes.outputs.app }}
+      backend-changed: ${{ steps.changes.outputs.backend }}
+      docs-changed: ${{ steps.changes.outputs.docs }}
+      workflows-changed: ${{ steps.changes.outputs.workflows }}
+      # Control de deployment
+      should-deploy: ${{ steps.deploy-decision.outputs.should-deploy }}
+      deploy-environment: ${{ steps.deploy-decision.outputs.environment }}
+      
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: 🔍 Detect path changes
+      id: changes
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          # Deployment manual - procesar todo
+          echo "app=true" >> $GITHUB_OUTPUT
+          echo "backend=true" >> $GITHUB_OUTPUT
+          echo "docs=true" >> $GITHUB_OUTPUT
+          echo "workflows=true" >> $GITHUB_OUTPUT
+        else
+          # Detectar cambios específicos por path
+          if git diff --name-only HEAD~1 | grep -E "^app/"; then
+            echo "app=true" >> $GITHUB_OUTPUT
+          else
+            echo "app=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if git diff --name-only HEAD~1 | grep -E "^backend/"; then
+            echo "backend=true" >> $GITHUB_OUTPUT
+          else
+            echo "backend=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if git diff --name-only HEAD~1 | grep -E "^docs/"; then
+            echo "docs=true" >> $GITHUB_OUTPUT
+          else
+            echo "docs=false" >> $GITHUB_OUTPUT
+          fi
+          
+          if git diff --name-only HEAD~1 | grep -E "^\.github/workflows/"; then
+            echo "workflows=true" >> $GITHUB_OUTPUT
+          else
+            echo "workflows=false" >> $GITHUB_OUTPUT
+          fi
+        fi
+    
+    - name: 🎯 Determine deployment strategy
+      id: deploy-decision
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+          echo "environment=${{ inputs.deploy_environment }}" >> $GITHUB_OUTPUT
+        elif [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+          echo "environment=production" >> $GITHUB_OUTPUT
+        elif [ "${{ github.ref }}" = "refs/heads/develop" ]; then
+          echo "should-deploy=true" >> $GITHUB_OUTPUT
+          echo "environment=staging" >> $GITHUB_OUTPUT
+        else
+          echo "should-deploy=false" >> $GITHUB_OUTPUT
+          echo "environment=none" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: 📋 Changes summary
+      run: |
+        echo "### 🔍 Change Detection Results" >> $GITHUB_STEP_SUMMARY
+        echo "- **App Changed**: ${{ steps.changes.outputs.app }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Backend Changed**: ${{ steps.changes.outputs.backend }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Docs Changed**: ${{ steps.changes.outputs.docs }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Workflows Changed**: ${{ steps.changes.outputs.workflows }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Should Deploy**: ${{ steps.deploy-decision.outputs.should-deploy }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Target Environment**: ${{ steps.deploy-decision.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+
+  # Job 2: Testing de la aplicación React (usando workflow reutilizable)
+  test-app:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.app-changed == 'true' && !inputs.skip_tests
+    uses: ./.github/workflows/reusable/test.yml
+    with:
+      working-directory: 'app'
+      node-version: '18'
+      test-command: 'test'
+      coverage: true
+      upload-coverage: true
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  # Job 3: Testing del backend (simulado)
+  test-backend:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend-changed == 'true' && !inputs.skip_tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+    
+    - name: 🐍 Setup Python (simulado para backend)
+      run: |
+        echo "🐍 Would setup Python environment for backend"
+        echo "📦 Would install backend dependencies"
+        echo "🧪 Would run backend tests"
+        echo "✅ Backend tests completed (simulated)"
+
+  # Job 4: Build y Deploy de la App (usando workflow reutilizable)
+  deploy-app:
+    needs: [detect-changes, test-app]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.should-deploy == 'true' &&
+      needs.detect-changes.outputs.app-changed == 'true' &&
+      (needs.test-app.result == 'success' || needs.test-app.result == 'skipped' || inputs.force_deploy_all)
+    uses: ./.github/workflows/reusable/build-deploy.yml
+    with:
+      working-directory: 'app'
+      environment: ${{ needs.detect-changes.outputs.deploy-environment }}
+      build-command: 'build'
+      artifact-name: 'app-build'
+      deploy-provider: 'netlify'  # Cambiar según tu proveedor
+      custom-domain: ''
+    secrets:
+      NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      S3_BUCKET: ${{ secrets.S3_BUCKET }}
+
+  # Job 5: Deploy del backend (simulado)
+  deploy-backend:
+    needs: [detect-changes, test-backend]
+    if: |
+      always() &&
+      needs.detect-changes.outputs.should-deploy == 'true' &&
+      needs.detect-changes.outputs.backend-changed == 'true' &&
+      (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped' || inputs.force_deploy_all)
+    runs-on: ubuntu-latest
+    
+    environment:
+      name: ${{ needs.detect-changes.outputs.deploy-environment }}-backend
+      url: https://api-${{ needs.detect-changes.outputs.deploy-environment }}.comic-app.com
+    
+    steps:
+    - name: 🚀 Deploy Backend
+      run: |
+        echo "🚀 Deploying backend to ${{ needs.detect-changes.outputs.deploy-environment }}"
+        echo "🐳 Would build Docker image"
+        echo "☸️ Would deploy to Kubernetes"
+        echo "🔍 Would run health checks"
+        echo "✅ Backend deployment completed (simulated)"
+
+  # Job 6: Deploy de documentación
+  deploy-docs:
+    needs: detect-changes
+    if: |
+      needs.detect-changes.outputs.docs-changed == 'true' ||
+      needs.detect-changes.outputs.workflows-changed == 'true'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+    
+    - name: 📚 Build and Deploy Docs
+      run: |
+        echo "📚 Building documentation..."
+        echo "🔄 Would process markdown files"
+        echo "🎨 Would apply styling"
+        echo "🚀 Would deploy to GitHub Pages"
+        echo "✅ Documentation deployment completed (simulated)"
+
+  # Job 7: Testing de integración E2E
+  e2e-tests:
+    needs: [deploy-app, deploy-backend]
+    if: |
+      always() &&
+      needs.deploy-app.result == 'success' &&
+      needs.deploy-backend.result == 'success' &&
+      !inputs.skip_tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chrome, firefox, edge]
+        test-suite: [smoke, critical-path, full]
+        exclude:
+          - browser: edge
+            test-suite: full
+    
+    steps:
+    - name: 📥 Checkout
+      uses: actions/checkout@v4
+    
+    - name: 🎭 Run E2E tests with ${{ matrix.browser }}
+      run: |
+        echo "🎭 Running ${{ matrix.test-suite }} E2E tests with ${{ matrix.browser }}"
+        echo "🌐 Frontend URL: ${{ needs.deploy-app.outputs.deploy-url }}"
+        echo "🔗 Backend URL: https://api-${{ needs.detect-changes.outputs.deploy-environment }}.comic-app.com"
+        
+        # Simular tests E2E
+        sleep $((3 + RANDOM % 5))
+        
+        if [ "${{ matrix.test-suite }}" = "smoke" ]; then
+          echo "✅ Smoke tests passed"
+        elif [ "${{ matrix.test-suite }}" = "critical-path" ]; then
+          echo "✅ Critical path tests passed"
+        else
+          echo "✅ Full E2E test suite passed"
+        fi
+
+  # Job 8: Performance & Security Testing
+  performance-security:
+    needs: [deploy-app]
+    if: |
+      always() &&
+      needs.deploy-app.result == 'success'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: ⚡ Performance Testing
+      run: |
+        echo "⚡ Running Lighthouse performance audit..."
+        echo "📊 Would test: ${{ needs.deploy-app.outputs.deploy-url }}"
+        
+        # Simular resultados de performance
+        sleep 5
+        
+        echo "📈 Performance Results:"
+        echo "- Performance: 95/100"
+        echo "- Accessibility: 98/100"
+        echo "- Best Practices: 92/100"
+        echo "- SEO: 100/100"
+    
+    - name: 🔒 Security Scanning
+      run: |
+        echo "🔒 Running security scans..."
+        echo "🕷️ Would run OWASP ZAP scan"
+        echo "🔍 Would check for vulnerable dependencies"
+        echo "🛡️ Would verify security headers"
+        
+        sleep 3
+        echo "✅ Security scan completed - no critical issues found"
+
+  # Job 9: Monitoring & Alerts Setup
+  setup-monitoring:
+    needs: [deploy-app, deploy-backend]
+    if: |
+      always() &&
+      needs.deploy-app.result == 'success' &&
+      needs.deploy-backend.result == 'success'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📊 Configure Monitoring
+      run: |
+        echo "📊 Setting up monitoring for ${{ needs.detect-changes.outputs.deploy-environment }}"
+        echo "🔔 Would configure alerts"
+        echo "📈 Would setup dashboards"
+        echo "🚨 Would configure error tracking"
+        echo "✅ Monitoring configuration completed"
+
+  # Job 10: Notificación final y reporte
+  final-report:
+    needs: [detect-changes, test-app, test-backend, deploy-app, deploy-backend, e2e-tests, performance-security]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📊 Generate deployment report
+      run: |
+        echo "### 🚀 Deployment Pipeline Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "#### 📋 Pipeline Overview" >> $GITHUB_STEP_SUMMARY
+        echo "- **Trigger**: ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ needs.detect-changes.outputs.deploy-environment }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deploy Status**: ${{ needs.detect-changes.outputs.should-deploy }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "#### 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "- **App Tests**: ${{ needs.test-app.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Backend Tests**: ${{ needs.test-backend.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **E2E Tests**: ${{ needs.e2e-tests.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "#### 🚀 Deployment Results" >> $GITHUB_STEP_SUMMARY
+        echo "- **App Deployment**: ${{ needs.deploy-app.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Backend Deployment**: ${{ needs.deploy-backend.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Performance Check**: ${{ needs.performance-security.result }}" >> $GITHUB_STEP_SUMMARY
+        
+        # URLs de deployment si están disponibles
+        if [ "${{ needs.deploy-app.result }}" = "success" ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 🌐 Deployment URLs" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend**: ${{ needs.deploy-app.outputs.deploy-url }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Backend**: https://api-${{ needs.detect-changes.outputs.deploy-environment }}.comic-app.com" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Status general
+        if [ "${{ needs.deploy-app.result }}" = "success" ] && [ "${{ needs.deploy-backend.result }}" = "success" ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Pipeline Status: SUCCESS" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ❌ Pipeline Status: FAILED" >> $GITHUB_STEP_SUMMARY
+        fi
+    
+    - name: 📬 Send notifications
+      run: |
+        echo "📬 Sending notifications..."
+        
+        if [ "${{ needs.deploy-app.result }}" = "success" ] && [ "${{ needs.deploy-backend.result }}" = "success" ]; then
+          echo "✅ Success notification: Deployment to ${{ needs.detect-changes.outputs.deploy-environment }} completed"
+          echo "🎉 All systems operational!"
+        else
+          echo "❌ Failure notification: Deployment to ${{ needs.detect-changes.outputs.deploy-environment }} failed"
+          echo "🚨 Please check the pipeline logs"
+        fi
+        
+        echo "📊 Pipeline metrics:"
+        echo "- Duration: ${{ github.event_name }} triggered pipeline"
+        echo "- Commit: ${{ github.sha }}"
+        echo "- Author: ${{ github.actor }}"

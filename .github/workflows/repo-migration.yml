@@ -1,0 +1,33 @@
+name: Repo Migration CI
+
+on:
+  workflow_dispatch:  # Permite ejecución manual desde GitHub
+
+jobs:
+  migrate-repo:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout destino
+      uses: actions/checkout@v3
+
+    - name: Clonar repositorio origen
+      run: |
+        git clone --bare https://github.com/usuario-origen/repo-origen.git
+        cd repo-origen.git
+        git push --mirror https://github.com/usuario-destino/repo-destino.git
+
+    - name: Validar estructura del repo migrado
+      run: |
+        git clone https://github.com/usuario-destino/repo-destino.git repo-validado
+        cd repo-validado
+        test -f Dockerfile && echo "✅ Dockerfile presente" || echo "❌ Falta Dockerfile"
+        test -d .github/workflows && echo "✅ Workflows detectados" || echo "❌ No hay workflows"
+
+    - name: Confirmar integridad del repo
+      run: |
+        cd repo-validado
+        git fsck --full
+
+    - name: Notificar éxito
+      run: echo "🚀 Migración completada con éxito"

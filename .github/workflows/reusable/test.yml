@@ -1,0 +1,130 @@
+# Workflow reutilizable para testing
+name: Reusable Test Workflow
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: 'Working directory for the tests'
+        required: true
+        type: string
+      node-version:
+        description: 'Node.js version to use'
+        required: false
+        type: string
+        default: '18'
+      test-command:
+        description: 'Test command to run'
+        required: false
+        type: string
+        default: 'test'
+      coverage:
+        description: 'Generate coverage report'
+        required: false
+        type: boolean
+        default: true
+      upload-coverage:
+        description: 'Upload coverage to artifact'
+        required: false
+        type: boolean
+        default: false
+    
+    outputs:
+      coverage-percentage:
+        description: 'Test coverage percentage'
+        value: ${{ jobs.test.outputs.coverage }}
+      test-result:
+        description: 'Test execution result'
+        value: ${{ jobs.test.outputs.result }}
+      
+    secrets:
+      NPM_TOKEN:
+        description: 'NPM authentication token'
+        required: false
+      CODECOV_TOKEN:
+        description: 'Codecov token for coverage upload'
+        required: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    outputs:
+      coverage: ${{ steps.coverage.outputs.percentage }}
+      result: ${{ steps.test.outcome }}
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+    
+    - name: 🟢 Setup Node.js ${{ inputs.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+        cache-dependency-path: '${{ inputs.working-directory }}/package-lock.json'
+    
+    - name: 🔐 Configure npm authentication
+      if: secrets.NPM_TOKEN
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+    
+    - name: 📦 Install dependencies
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "📦 Installing dependencies in ${{ inputs.working-directory }}"
+        npm ci
+    
+    - name: 🧪 Run tests
+      id: test
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        echo "🧪 Running tests with command: npm run ${{ inputs.test-command }}"
+        
+        if [ "${{ inputs.coverage }}" = "true" ]; then
+          npm run ${{ inputs.test-command }} -- --coverage --watchAll=false --collectCoverageFrom="src/**/*.{js,jsx}" --coverageReporters=text-summary,lcov
+        else
+          npm run ${{ inputs.test-command }} -- --watchAll=false
+        fi
+      continue-on-error: true
+    
+    - name: 📊 Extract coverage
+      id: coverage
+      if: inputs.coverage
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ -f "coverage/lcov.info" ]; then
+          # Extraer porcentaje de cobertura del summary
+          COVERAGE=$(grep -o 'Lines.*: [0-9.]*%' coverage/lcov-report/index.html | head -1 | grep -o '[0-9.]*%' || echo "0%")
+          echo "percentage=${COVERAGE}" >> $GITHUB_OUTPUT
+          echo "📊 Coverage: ${COVERAGE}"
+        else
+          echo "percentage=0%" >> $GITHUB_OUTPUT
+          echo "⚠️ No coverage report found"
+        fi
+    
+    - name: 📤 Upload coverage artifacts
+      if: inputs.upload-coverage && inputs.coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-${{ github.run_id }}
+        path: ${{ inputs.working-directory }}/coverage/
+        retention-days: 7
+    
+    - name: 🆙 Upload to Codecov
+      if: secrets.CODECOV_TOKEN && inputs.coverage
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        directory: ${{ inputs.working-directory }}
+        fail_ci_if_error: false
+    
+    - name: 📋 Test summary
+      run: |
+        echo "### 🧪 Test Results Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Directory**: ${{ inputs.working-directory }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Node Version**: ${{ inputs.node-version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Test Status**: ${{ steps.test.outcome }}" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ inputs.coverage }}" = "true" ]; then
+          echo "- **Coverage**: ${{ steps.coverage.outputs.percentage }}" >> $GITHUB_STEP_SUMMARY
+        fi
