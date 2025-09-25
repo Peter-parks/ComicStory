@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 
 const Personajes = () => {
   const [data, setData] = useState();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);w
 
 
 
